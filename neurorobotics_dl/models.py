@@ -15,8 +15,6 @@ class EEGNet(nn.Module):
                      F1 = 8, 
                      D = 2, 
                      F2 = 16, 
-                     norm_rate = 0.25,
-                     dropoutType = 'Dropout'
                       ) -> None:
                 super().__init__()
 
@@ -29,7 +27,7 @@ class EEGNet(nn.Module):
                 self.point_conv = nn.Conv2d(F1 * D, F2, kernel_size=(1,16),padding=(0, 8), bias=False)
                 self.bn3 = nn.BatchNorm2d(F2)
                 self.drop2 = nn.Dropout2d(p=dropoutRate)
-                self.fc = nn.Linear(F2*Samples//32,nb_classes)
+                self.fc = nn.Linear(F2*(Samples//32),nb_classes)
 
         def forward(self,x):
                 h = self.conv(torch.permute(x,(0,2,1,3)))
@@ -68,7 +66,7 @@ class GCNWithLearnableWeight(nn.Module):
         self.register_buffer('EyeA',EyeA)
 
         ## Learnable adjacency weights
-        self.Wa = torch.randn((1,num_channels*(num_channels-1)//2)) + 1  # init weights as gaussian distribution with mean 1
+        self.Wa = torch.randn((1,num_channels*(num_channels-1)//2)) + 1 # init weights as gaussian distribution with mean 1
         self.Wa.requires_grad=True
         self.Wa = nn.Parameter(self.Wa)
 
@@ -123,7 +121,8 @@ class GCN_GRU_sequence_fxdD(nn.Module):
                  gcn_activation,
                  gru_hidden_units,
                  gcn_dropout,
-                 gru_dropout):
+                 gru_dropout,
+                 num_classes = None):
 
         super().__init__()
 
@@ -138,6 +137,9 @@ class GCN_GRU_sequence_fxdD(nn.Module):
         self.gru = nn.GRU(num_channels*gcn_output_dim,gru_hidden_units,batch_first=True)
         self.gru_drop = nn.Dropout(gru_dropout)
         
+        self.fc = None
+        if num_classes is not None:
+            self.fc = nn.Linear(2*gru_hidden_units,num_classes)
     def forward(self,x):
 
         ## INPUT
@@ -168,21 +170,24 @@ class GCN_GRU_sequence_fxdD(nn.Module):
         # print('After GRU_EEG',h_eeg.shape)
         h_eeg = self.gru_drop(h_eeg)
         # return F.sigmoid(h_eeg)
+    
+        if self.fc is not None:
+            h_eeg = F.softmax(self.fc(h_eeg),dim=-1)
+    
         return h_eeg
-
+    
 class GCN_dGRU_sequence_fxdD(nn.Module):
     def __init__(self,
                  num_channels_eeg,
                  num_channels_emg,
-                 conv_kernLength,
                  gcn_input_dim,
                  gcn_hidden_dims,
                  gcn_output_dim,
                  gcn_activation,
-                 gcn_activate_last,
                  gru_hidden_units,
                  gcn_dropout,
-                 gru_dropout):
+                 gru_dropout,
+                 num_classes = None):
         
         super().__init__()
 
@@ -194,7 +199,7 @@ class GCN_dGRU_sequence_fxdD(nn.Module):
         # self.bn1 = nn.BatchNorm2d(gcn_input_dim)
 
         ## GCN here
-        self.gcn = GCNWithLearnableWeight(self.num_tot,gcn_input_dim,gcn_hidden_dims,gcn_output_dim,gcn_activation,gcn_activate_last)
+        self.gcn = GCNWithLearnableWeight(self.num_tot,gcn_input_dim,gcn_hidden_dims,gcn_output_dim,gcn_activation,activate_last=True)
         
         self.batch_norm = nn.BatchNorm1d(self.num_tot)
 
@@ -207,6 +212,11 @@ class GCN_dGRU_sequence_fxdD(nn.Module):
         ## EMG GRU
         self.gru_EMG = nn.GRU(num_channels_emg*gcn_output_dim,gru_hidden_units,batch_first=True)
         self.gru_drop_EMG = nn.Dropout(gru_dropout)
+
+        self.fc = None
+        if num_classes is not None:
+            self.fc = nn.Linear(2*gru_hidden_units,num_classes)
+
         
     def forward(self,x):
 
@@ -240,8 +250,7 @@ class GCN_dGRU_sequence_fxdD(nn.Module):
         h_eeg = self.gru_EEG(h_eeg)
         h_eeg = self.gru_drop_EEG(h_eeg[1])
         # print('After GRU_EEG',h_eeg[1].shape)
-        h_eeg = F.relu(h_eeg)
-        
+
         ## EMG BRANCH
         h_emg = x[:,:,self.num_EEG:,:].view(b_s,s_l,-1)
         # print("H_emg:",h_emg.shape)
@@ -249,12 +258,13 @@ class GCN_dGRU_sequence_fxdD(nn.Module):
         h_emg = self.gru_EMG(h_emg)
         h_emg = self.gru_drop_EMG(h_emg[1])
         # print('After GRU_EMG',h_emg.shape)
-        h_emg = F.relu(h_emg)
 
         ## CLASSIFICATION
         out = torch.cat((h_eeg,h_emg),axis=-1).view(b_s,-1)
         # print('After Concatenation',out.shape)
 
+        if self.fc is not None:
+            out = F.softmax(self.fc(out),dim=-1)
         return out
 
 # EEG/EMG prototypical Model
