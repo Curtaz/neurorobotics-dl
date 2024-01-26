@@ -230,7 +230,7 @@ class GCN_dGRU_sequence_fxdD(nn.Module):
         else:
             b_s,n_ch,s_s,s_l = shape 
 
-        print('Input:',x.shape)
+        # print('Input:',x.shape)
         x = x.permute(0,3,1,2).reshape(b_s*s_l,n_ch,s_s) #FIXME: check this is correct, find a better way
         # print('Before GCN:',x.shape)
         ## GCN
