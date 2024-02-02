@@ -14,7 +14,7 @@ def visualize_embeddings(embeddings, labels,label_mappings):
 
   for i in range(num_classes):
     idx = (labels==label_set[i])
-    plt.plot(embeddings[idx,0], embeddings[idx,1], ".", markersize=5, label=label_mappings[label_set[i]])
+    plt.plot(embeddings[idx,0], embeddings[idx,1], ".", markersize=1, label=label_mappings[label_set[i]])
   plt.legend(loc="best", markerscale=1)
   plt.show()
 
@@ -32,7 +32,7 @@ def visualize_embeddings3D(embeddings,labels,label_mappings):
     for i in range(num_classes):
         idx = (labels==label_set[i])
         print(len(idx))
-        plt.plot(embeddings[idx,0],embeddings[idx,1],embeddings[idx,2], ".", markersize=5, label=label_mappings[label_set[i]])
+        plt.plot(embeddings[idx,0],embeddings[idx,1],embeddings[idx,2], ".", markersize=1, label=label_mappings[label_set[i]])
     plt.legend(loc="best", markerscale=1)
     plt.show()
 
@@ -69,12 +69,12 @@ def compare_embeddings(embeddings1,embeddings2, labels1,labels2,embeddings3=None
 
   for i in range(num_classes):
     idx = (labels1==label_set[i])
-    ax1.plot(embeddings1[idx,0], embeddings1[idx,1], ".", markersize=10, label=label_mappings[label_set[i]])
+    ax1.plot(embeddings1[idx,0], embeddings1[idx,1], ".", markersize=1, label=label_mappings[label_set[i]])
 
     idx = (labels2==label_set[i])
-    ax2.plot(embeddings2[idx,0], embeddings2[idx,1], ".", markersize=10, label=label_mappings[label_set[i]])
+    ax2.plot(embeddings2[idx,0], embeddings2[idx,1], ".", markersize=1, label=label_mappings[label_set[i]])
     if embeddings3 is not None and labels3 is not None: 
       idx = (labels3==label_set[i])
-      ax3.plot(embeddings3[idx,0], embeddings3[idx,1], ".", markersize=10, label=label_mappings[label_set[i]])
+      ax3.plot(embeddings3[idx,0], embeddings3[idx,1], ".", markersize=1, label=label_mappings[label_set[i]])
   ax2.legend(loc="best", markerscale=1)
   plt.show()
