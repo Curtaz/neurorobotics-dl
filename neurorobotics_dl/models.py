@@ -324,8 +324,9 @@ class PrototypicalModel(nn.Module):
     def compute_embeddings(self,
                            query : Tensor,
                            ):
-
-      return self.net(query)
+      self.eval()
+      with torch.no_grad():
+        return self.net(query)
       
     def forward(self,  # type: ignore
                 query_input: Tensor,
@@ -350,12 +351,12 @@ class PrototypicalModel(nn.Module):
 
         """
 
-        query_encoding = self.compute_embeddings(query_input)
+        query_encoding = self.net(query_input)
         
         if prototypes is not None:
             prototypes = prototypes
         elif support_input is not None and support_label is not None:
-            support_encoding = self.compute_embeddings(support_input)
+            support_encoding = self.net(support_input)
             prototypes = self.compute_prototypes(support_encoding, support_label)
         else:
           raise ValueError("No prototypes set or support vectors have been provided")
