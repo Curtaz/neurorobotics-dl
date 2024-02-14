@@ -1,0 +1,12 @@
+class Event():
+    START = 1
+    RIGHT_HAND = 769
+    LEFT_HAND = 770
+    BOTH_HANDS = 773
+    BOTH_FEET = 771
+    CONT_FEEDBACK = 781
+    REST = 783
+    FIXATION = 786
+    HIT = 897
+    MISS = 898
+    TIMEOUT = 899
