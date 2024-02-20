@@ -287,7 +287,7 @@ def train(model,
 
         # Log metrics
         tqdm.write(f'Epoch {epoch+1}/{num_epochs}: Train loss: {train_loss} - Val loss: {val_loss} - Val acc: {val_metric}')
-        writer.add_scalar('Hyperparameters/Learning Rate', lr, epoch)
+        writer.add_scalar('Hyperparameters/Learning_Rate', lr, epoch)
         writer.add_scalar('Training/Loss', train_loss, epoch)
         writer.add_scalar('Validation/Loss', val_loss, epoch)
         writer.add_scalar('Validation/Accuracy', val_metric, epoch)

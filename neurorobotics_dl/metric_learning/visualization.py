@@ -90,13 +90,13 @@ def compare_embeddings(embeddings1,
 
     for i in range(num_classes):
       idx = (labels1==label_set[i])
-      ax1.plot(embeddings1[idx,0], embeddings1[idx,1], ".", markersize=1, label=label_mappings[label_set[i]])
+      ax1.plot(embeddings1[idx,0], embeddings1[idx,1], ".", markersize=5, label=label_mappings[label_set[i]])
 
       idx = (labels2==label_set[i])
-      ax2.plot(embeddings2[idx,0], embeddings2[idx,1], ".", markersize=1, label=label_mappings[label_set[i]])
+      ax2.plot(embeddings2[idx,0], embeddings2[idx,1], ".", markersize=5, label=label_mappings[label_set[i]])
       if embeddings3 is not None and labels3 is not None: 
         idx = (labels3==label_set[i])
-        ax3.plot(embeddings3[idx,0], embeddings3[idx,1], ".", markersize=1, label=label_mappings[label_set[i]])
+        ax3.plot(embeddings3[idx,0], embeddings3[idx,1], ".", markersize=5, label=label_mappings[label_set[i]])
     ax2.legend(loc="best", markerscale=1)
     if save_as is not None:
       plt.savefig(save_as)

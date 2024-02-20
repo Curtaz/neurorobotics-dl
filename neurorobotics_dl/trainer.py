@@ -11,7 +11,7 @@ import torch
 from torch import nn
 from tqdm.auto import tqdm
 
-logger = logging.getLogger("GNN_trainer")
+logger = logging.getLogger("Trainer")
 
 class EarlyStopper:
     def __init__(self, patience=1, min_delta=0):

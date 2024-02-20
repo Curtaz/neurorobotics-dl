@@ -1,7 +1,7 @@
 from prettytable import PrettyTable
 import yaml
 from pathlib import Path
-
+import numpy as np
 def fix_mat(data):
     if data.dtype.names:
         new_data = dict()
@@ -10,6 +10,8 @@ def fix_mat(data):
         for k,v in new_data.items():
             if v.dtype.names:
                 new_data[k] = fix_mat(v)
+            else:
+                new_data[k] = np.squeeze(v)
         return new_data
     else:
         return data

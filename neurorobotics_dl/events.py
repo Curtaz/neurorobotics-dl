@@ -2,8 +2,8 @@ class Event():
     START = 1
     RIGHT_HAND = 769
     LEFT_HAND = 770
-    BOTH_HANDS = 773
     BOTH_FEET = 771
+    BOTH_HANDS = 773
     CONT_FEEDBACK = 781
     REST = 783
     FIXATION = 786
