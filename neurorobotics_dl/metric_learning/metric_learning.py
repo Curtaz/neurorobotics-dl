@@ -1,13 +1,12 @@
 import os
 from typing import Any, Dict, Optional, Tuple, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.nn.functional as F
 import wandb
 from tensorboardX import SummaryWriter
-from torch import Tensor,nn
-import torch.nn.functional as F
+from torch import Tensor, nn
 from torch.nn.utils import clip_grad_norm_
 from tqdm.auto import tqdm
 
@@ -148,7 +147,7 @@ class EarlyStopper:
                 return True
         return False
 
-def train_step(model,train_sampler,optimizer,loss_fn,writer,log_interval = 0,max_grad_norm=0,device='cuda'):        	
+def train_step(model,train_sampler,optimizer,loss_fn, writer, scheduler = None, log_interval = 0,max_grad_norm=0,device='cuda'):        	
     global global_step
 
     model.train()
@@ -172,7 +171,8 @@ def train_step(model,train_sampler,optimizer,loss_fn,writer,log_interval = 0,max
 
             # Optimize
             optimizer.step()
-            
+            if scheduler:
+                scheduler.step()
             # Log training loss
             train_loss = loss.item()
             if log_interval > 0 and global_step % log_interval == 0:
@@ -219,15 +219,14 @@ def test_step(model,train_eval_sampler,val_sampler,loss_fn,device):
       val_metric = (pred.argmax(dim=1) == target).float().mean().item()
   return val_loss,val_metric
 
-# train(model,episodic_sampler,val_sampler,device,log_dir='logs')
-
 # Training Loop
 def train(model,
           episodic_sampler,
           train_sampler,
           val_sampler,
           num_epochs,
-          learning_rate=0.001,
+          optimizer = None,
+          scheduler = None,
           device='cuda',
           log_dir='.',
           log_interval=1,
@@ -243,12 +242,13 @@ def train(model,
             project='EEG metric learning',
             name='test',
             entity="tcortecchia",
-            config = {	"lr": learning_rate,
-                         "n_epochs":num_epochs, 
-                        "n_support":episodic_sampler.n_support, 
-                        "n_episodes": episodic_sampler.n_episodes,
-                        "n_classes": episodic_sampler.n_classes,
-                        "eval_batch_size": val_sampler.batch_size})
+            config = {"n_epochs":num_epochs, 
+                      "n_support":episodic_sampler.n_support, 
+                      "n_episodes": episodic_sampler.n_episodes,
+                      "n_classes": episodic_sampler.n_classes,
+                      "eval_batch_size": val_sampler.batch_size,
+                      "optimizer": optimizer,
+                      "schdeuler":scheduler})
     global global_step
 
     global_step = 0
@@ -265,15 +265,23 @@ def train(model,
     writer = SummaryWriter(log_dir=log_dir
             )
     loss_fn = torch.nn.CrossEntropyLoss()
-    parameters = (p for p in model.parameters() if p.requires_grad)
-    optimizer = torch.optim.Adam(parameters, lr=learning_rate)
+    
+    if optimizer is None:
+        print("No optimizer provided. Defaulting to Adam with lr=0.01.")
+        optimizer = torch.optim.Adam((p for p in model.parameters() if p.requires_grad), lr=0.01)
+    if scheduler is None:
+        print("No lr scheduler provided.")
 
     # Training start
     print('Beginning training')
     for epoch in tqdm(range(num_epochs),position=0):
-        train_loss = train_step(model,episodic_sampler,optimizer,loss_fn,writer,log_interval,max_grad_norm,device)
+        train_loss = train_step(model,episodic_sampler,optimizer,loss_fn,writer,scheduler,log_interval,max_grad_norm,device)
         val_loss,val_metric = test_step(model,train_sampler,val_sampler,loss_fn,device)
-        lr = optimizer.param_groups[0]['lr']
+        if scheduler: 
+            lr = scheduler.get_last_lr()
+        else:
+            lr = optimizer.param_groups[0]['lr']
+        
         # Update best model
         if best_metric is None or val_metric > best_metric:
             best_metric = val_metric

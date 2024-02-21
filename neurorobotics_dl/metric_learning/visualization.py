@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
-from matplotlib import cycler
 import numpy as np
+import seaborn as sns
+from matplotlib import cycler
 
 def visualize_embeddings(embeddings,
                          labels,
@@ -22,7 +23,7 @@ def visualize_embeddings(embeddings,
     plt.legend(loc="best", markerscale=1)
     if save_as is not None:
       plt.savefig(save_as)
-    if show: 
+    if show == True: 
       plt.show()
 
 def visualize_embeddings3D(embeddings,
@@ -47,7 +48,7 @@ def visualize_embeddings3D(embeddings,
     plt.legend(loc="best", markerscale=1)
     if save_as is not None:
       plt.savefig(save_as)
-    if show: 
+    if show == True: 
       plt.show()
 
 def compare_embeddings(embeddings1,
@@ -100,5 +101,22 @@ def compare_embeddings(embeddings1,
     ax2.legend(loc="best", markerscale=1)
     if save_as is not None:
       plt.savefig(save_as)
-    if show: 
+    if show == True: 
+      plt.show()
+
+def show_kernels(clf,embeddings,labels,label_mappings=None,save_as=None,show=False):
+    if label_mappings is None:
+      label_mappings = {l:l for l in np.concatenate(label_mappings)}
+    train_probs = clf.predict_proba(embeddings)
+    plt.figure()
+    sns.set_style('whitegrid')
+    h_mu,h_std = train_probs[labels==0][:,0].mean(),train_probs[labels==0][:,0].std()
+    f_mu,f_std = 1-train_probs[labels==1][:,1].mean(),train_probs[labels==1][:,1].std()
+
+    sns.kdeplot(np.random.normal(h_mu,h_std,1000))
+    sns.kdeplot(np.random.normal(f_mu,f_std,1000))
+    plt.legend([label_mappings[0],label_mappings[1]])
+    if save_as is not None:
+      plt.savefig(save_as)
+    if show == True: 
       plt.show()
