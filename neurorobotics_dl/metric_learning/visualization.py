@@ -7,7 +7,8 @@ def visualize_embeddings(embeddings,
                          labels,
                          label_mappings,
                          save_as=None,
-                         show=False):
+                         show=False,
+                         markersize=5):
     label_set = np.unique(labels)
     num_classes = len(label_set)
     plt.figure(figsize=(10,10))
@@ -19,7 +20,7 @@ def visualize_embeddings(embeddings,
 
     for i in range(num_classes):
       idx = (labels==label_set[i])
-      plt.plot(embeddings[idx,0], embeddings[idx,1], ".", markersize=1, label=label_mappings[label_set[i]])
+      plt.plot(embeddings[idx,0], embeddings[idx,1], ".", markersize=markersize, label=label_mappings[label_set[i]])
     plt.legend(loc="best", markerscale=1)
     if save_as is not None:
       plt.savefig(save_as)
@@ -30,7 +31,8 @@ def visualize_embeddings3D(embeddings,
                            labels,
                            label_mappings,
                            save_as=None,
-                           show=False):
+                           show=False,
+                           markersize=5):
     fig = plt.figure(figsize=(7,7))
     ax = fig.add_subplot(projection='3d')
     label_set = np.unique(labels)
@@ -44,7 +46,7 @@ def visualize_embeddings3D(embeddings,
     for i in range(num_classes):
         idx = (labels==label_set[i])
         print(len(idx))
-        plt.plot(embeddings[idx,0],embeddings[idx,1],embeddings[idx,2], ".", markersize=1, label=label_mappings[label_set[i]])
+        plt.plot(embeddings[idx,0],embeddings[idx,1],embeddings[idx,2], ".", markersize=markersize, label=label_mappings[label_set[i]])
     plt.legend(loc="best", markerscale=1)
     if save_as is not None:
       plt.savefig(save_as)
@@ -56,10 +58,11 @@ def compare_embeddings(embeddings1,
                        labels1,
                        labels2,
                        embeddings3=None,
-                       labels3=None,
+                       labels3=np.zeros(0),
                        label_mappings=None,
                        save_as=None,
-                       show=False):
+                       show=False,
+                       markersize=5):
     if embeddings3 is not None and labels3 is not None:
       fig,(ax1,ax2,ax3) = plt.subplots(1,3)
       fig.set_size_inches(21,7)
@@ -91,13 +94,13 @@ def compare_embeddings(embeddings1,
 
     for i in range(num_classes):
       idx = (labels1==label_set[i])
-      ax1.plot(embeddings1[idx,0], embeddings1[idx,1], ".", markersize=5, label=label_mappings[label_set[i]])
+      ax1.plot(embeddings1[idx,0], embeddings1[idx,1], ".", markersize=markersize, label=label_mappings[label_set[i]])
 
       idx = (labels2==label_set[i])
-      ax2.plot(embeddings2[idx,0], embeddings2[idx,1], ".", markersize=5, label=label_mappings[label_set[i]])
+      ax2.plot(embeddings2[idx,0], embeddings2[idx,1], ".", markersize=markersize, label=label_mappings[label_set[i]])
       if embeddings3 is not None and labels3 is not None: 
         idx = (labels3==label_set[i])
-        ax3.plot(embeddings3[idx,0], embeddings3[idx,1], ".", markersize=5, label=label_mappings[label_set[i]])
+        ax3.plot(embeddings3[idx,0], embeddings3[idx,1], ".", markersize=markersize, label=label_mappings[label_set[i]])
     ax2.legend(loc="best", markerscale=1)
     if save_as is not None:
       plt.savefig(save_as)

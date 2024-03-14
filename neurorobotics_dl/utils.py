@@ -3,7 +3,7 @@ from importlib import import_module
 import numpy as np
 import yaml
 from prettytable import PrettyTable
-
+from torch.utils.data import Dataset
 
 def fix_mat(data):
     if data.dtype.names:
@@ -41,3 +41,17 @@ def get_class(class_str):
         return getattr(module, class_name)
     except (ImportError, AttributeError) as e:
         raise ImportError(class_str)
+
+"""__________________________________________________UTILITIES________________________________________________"""
+
+class MyDataset(Dataset):
+    def __init__(self,X,y):
+        super().__init__()
+        self.X = X
+        self.y = y
+
+    def __getitem__(self, index):
+        return self.X[index],self.y[index]
+    
+    def __len__(self):
+        return len(self.X)

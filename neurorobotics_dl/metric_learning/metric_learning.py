@@ -171,8 +171,6 @@ def train_step(model,train_sampler,optimizer,loss_fn, writer, scheduler = None, 
 
             # Optimize
             optimizer.step()
-            if scheduler:
-                scheduler.step()
             # Log training loss
             train_loss = loss.item()
             if log_interval > 0 and global_step % log_interval == 0:
@@ -248,7 +246,7 @@ def train(model,
                       "n_classes": episodic_sampler.n_classes,
                       "eval_batch_size": val_sampler.batch_size,
                       "optimizer": optimizer,
-                      "schdeuler":scheduler})
+                      "scheduler":scheduler})
     global global_step
 
     global_step = 0
@@ -279,6 +277,7 @@ def train(model,
         val_loss,val_metric = test_step(model,train_sampler,val_sampler,loss_fn,device)
         if scheduler: 
             lr = scheduler.get_last_lr()
+            scheduler.step()
         else:
             lr = optimizer.param_groups[0]['lr']
         
