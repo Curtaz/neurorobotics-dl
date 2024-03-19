@@ -55,3 +55,31 @@ class MyDataset(Dataset):
     
     def __len__(self):
         return len(self.X)
+
+class EarlyStopper:
+    def __init__(self, patience=1, min_delta=0,is_inverted = False):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.min_validation_loss = np.inf
+        self.is_inverted = is_inverted
+        
+
+    def early_stop(self, validation_loss):
+        if self.is_inverted:
+          if validation_loss > self.min_validation_loss:
+            self.min_validation_loss = validation_loss
+            self.counter = 0
+          elif validation_loss < (self.min_validation_loss - self.min_delta):
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        else:
+            if validation_loss < self.min_validation_loss:
+                self.min_validation_loss = validation_loss
+                self.counter = 0
+            elif validation_loss > (self.min_validation_loss + self.min_delta):
+                self.counter += 1
+                if self.counter >= self.patience:
+                    return True
+        return False

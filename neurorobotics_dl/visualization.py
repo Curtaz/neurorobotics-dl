@@ -8,11 +8,15 @@ def visualize_embeddings(embeddings,
                          label_mappings,
                          save_as=None,
                          show=False,
+                         ax = None,
                          markersize=5):
     label_set = np.unique(labels)
     num_classes = len(label_set)
-    plt.figure(figsize=(10,10))
-    plt.gca().set_prop_cycle(
+    
+    if ax is None:
+      plt.figure(figsize=(10,10))
+      ax = plt.gca() 
+    ax.set_prop_cycle(
         cycler(
             "color", [plt.cm.nipy_spectral(i) for i in np.linspace(0,0.9, num_classes)]
         )
@@ -20,8 +24,8 @@ def visualize_embeddings(embeddings,
 
     for i in range(num_classes):
       idx = (labels==label_set[i])
-      plt.plot(embeddings[idx,0], embeddings[idx,1], ".", markersize=markersize, label=label_mappings[label_set[i]])
-    plt.legend(loc="best", markerscale=1)
+      ax.plot(embeddings[idx,0], embeddings[idx,1], ".", markersize=markersize, label=label_mappings[label_set[i]])
+    ax.legend(loc="best", markerscale=1)
     if save_as is not None:
       plt.savefig(save_as)
     if show == True: 

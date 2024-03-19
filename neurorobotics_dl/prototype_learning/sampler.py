@@ -94,10 +94,10 @@ class EpisodicSampler(object):
             query_source, query_target = list(zip(*queries))
             support_source, support_target = list(zip(*supports))
 
-            query_source = torch.tensor(query_source)
+            query_source = torch.from_numpy(np.array(query_source,dtype=np.float32))
             query_target = torch.tensor(query_target)
 
-            support_source = torch.tensor(support_source)
+            support_source = torch.from_numpy(np.array(support_source,dtype=np.float32))
             support_target = torch.tensor(support_target)
 
             if len(query_target.size()) == 2:
@@ -157,8 +157,7 @@ class BaseSampler(object):
         for split in indices_splits:
             examples = [self.data[i] for i in split]
             source, target = list(zip(*examples))
-            source = torch.tensor(source)
-            # source = torch.from_numpy(np.concatenate(source))
+            source = torch.from_numpy(np.array(source,dtype=np.float32))
             target = torch.tensor(target)
             yield (source, target.long())
 
