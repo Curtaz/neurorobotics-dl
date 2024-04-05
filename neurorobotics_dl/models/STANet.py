@@ -88,19 +88,26 @@ class CC_Block(nn.Module):
         # return self.conv(x)
     
 class AttentionHead(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self,
+                 seq_len,
+                 hidden_size) -> None:
         super().__init__()
+        self.fck = nn.Linear(seq_len,hidden_size)
+        self.fcq = nn.Linear(seq_len,hidden_size)
+        self.fcv = nn.Linear(seq_len,seq_len)
     def forward(self,x):
-        k = q = v = x
+        k = self.fck(x)
+        q = self.fcq(x)
+        v = self.fcv(x)
         phi = F.softmax(q.matmul(k.mT),dim=(1))
 
         x = torch.matmul(phi,v) +x
         return x
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self,num_heads) -> None:
+    def __init__(self,seq_len,hidden_size,num_heads) -> None:
         super().__init__()
-        self.heads = nn.ModuleList([AttentionHead() for _ in range(num_heads)])
+        self.heads = nn.ModuleList([AttentionHead(seq_len,hidden_size) for _ in range(num_heads)])
     
     def forward(self,x):
         v = []
@@ -175,15 +182,24 @@ class C_Block(nn.Module):
         x = self.conv1(x)
         x = self.conv2(x)
         x = torch.flatten(x,start_dim=1)
-        x = torch.sigmoid(self.fc(x))
+        x = torch.softmax(self.fc(x),dim=1)
         return x
     
 
 class STANet(nn.Module):
-    def __init__(self,T,C,N=20,L=1,MSEM_C1=20,MSEM_C2=10,dropout=0.5) -> None:
+    def __init__(self,
+                 T,
+                 C,
+                 num_classes,
+                 N=20,
+                 L=1,
+                 MSEM_C1=20,
+                 MSEM_C2=10,
+                 dropout=0.5) -> None:
         super().__init__()
         self.tc1 = TC_Block(1,N,pool='avg',conv_kernel_size=N,pool_kernel_size=2)
-        self.mha = MultiHeadAttention(L)
+        self.mha = MultiHeadAttention(T//2,128,L)
+
 
         self.cc_block = nn.Sequential(nn.Conv2d(N*(L+1),N*(L+1),kernel_size=(C,1),groups=N*(L+1)),
                                 nn.BatchNorm2d(N*(L+1)),
@@ -191,7 +207,7 @@ class STANet(nn.Module):
                                 nn.Dropout(dropout))
         self.tam = TemporalAttention((N*(L+1)))
         self.msem = MSEM((N*(L+1)),conv1_chans=MSEM_C1,conv2_chans=MSEM_C2)
-        self.cblock = C_Block(T//2,(MSEM_C1+MSEM_C2)*3+(N*(L+1)),4)
+        self.cblock = C_Block(T//2,(MSEM_C1+MSEM_C2)*3+(N*(L+1)),num_classes=num_classes)
 
     def forward(self,x):
         # print('Input:',x.shape)
