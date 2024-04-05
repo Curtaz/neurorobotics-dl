@@ -47,8 +47,9 @@ def train_step(model,
                 max_grad_norm=0,
                 device='cuda'):        	
     global global_step
-    num_triplets = 0
+    tot_num_triplets = 0
     model.train()
+    avg_loss = 0
     with torch.enable_grad():
         for idx, batch in enumerate(tqdm(train_loader,position=1,leave=False)):
             # Zero the gradients and clear the accumulated loss
@@ -56,7 +57,7 @@ def train_step(model,
             # Move to device
             batch = tuple(t.to(device) for t in batch)
             (data, labels) = batch
-            embeddings = sigmoid(model(data))
+            embeddings = model(data)
             hard_pairs = miner(embeddings, labels)
 
             loss = loss_fn(embeddings, labels, hard_pairs)
@@ -70,18 +71,18 @@ def train_step(model,
             optimizer.step()
             # Log training loss
             train_loss = loss.item()
-            num_triplets+=miner.num_triplets
+            tot_num_triplets+=miner.num_triplets
             if log_interval > 0 and global_step % log_interval == 0:
                 writer.add_scalar('Training/Loss_IT', train_loss, global_step)
                 writer.add_scalar('Training/Mined_triplets_IT',miner.num_triplets,global_step)
             
             # Increment the global step
             global_step+=1
-
+            avg_loss += train_loss*miner.num_triplets
             # Zero the gradients when exiting a train step
             optimizer.zero_grad()
-
-    return loss.item(),num_triplets
+        avg_loss = avg_loss/tot_num_triplets
+    return avg_loss,tot_num_triplets
 
 def train(model,
           train_loader,
