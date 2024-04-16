@@ -28,7 +28,7 @@ class EEGNet(nn.Module):
                 self.fc = nn.Linear(F2*(Samples//32),nb_classes)
 
         def forward(self,x):
-                h = self.conv(torch.permute(x,(0,2,1,3)))
+                h = self.conv(x)
                 h = self.bn1(h)
                 h = self.depth_conv(h)
                 h = self.bn2(h)

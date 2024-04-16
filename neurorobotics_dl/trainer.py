@@ -101,13 +101,11 @@ def validate_one_step(model: nn.Module,
     total_num_samples = 0
     with torch.no_grad():
         for x,y in tqdm(dataloader,position=1, leave=False):
-
             x = x.to(device)
             y = y.to(device)
 
             # Forward pass
-            logits = model(x).squeeze()
-
+            logits = model(x).squeeze(1)
             # Compute loss
             loss = criterion(logits, y)
 
@@ -239,7 +237,7 @@ class MyTrainer:
                 f"Epoch: {epoch + 1:03} Train Loss: {train_loss:.4f} Train Acc: {train_acc:.2f} Val Loss: {val_loss:.4f} Val Acc: {val_acc:.2f}"
             )
 
-            if train_loss < best_loss:
+            if val_loss < best_loss:
                 if self.max_num_ckpts !=0:
                     torch.save(
                         {
@@ -252,7 +250,7 @@ class MyTrainer:
                             "val_loss": val_loss,
                             "val_acc": val_acc,
                         },
-                        checkpath + "/%05d" % (epoch + 1) + "-%6.5f" % (train_loss) + ".pt",
+                        checkpath + "/%05d" % (epoch + 1) + "-%6.5f" % (val_loss) + ".pt",
                     )
                 if self.max_num_ckpts > 0:
                     ckpts = glob.glob(f'{checkpath}/*.pt')
