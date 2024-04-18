@@ -217,66 +217,70 @@ class MyTrainer:
 
         # Start training
         best_loss = np.inf
-        for epoch in tqdm(range(num_epochs),position=0):
+        try:
+            for epoch in tqdm(range(num_epochs),position=0):
 
-            train_loss,train_acc, train_time = train_one_step(
-                self.model,
-                self.optimizer,
-                train_loss_func,
-                train_loader,
-                device = device,
-                )      
-           
-            val_loss,val_acc = validate_one_step(self.model,
-                train_loss_func,
-                val_loader,
-                device = device,)
-
-            self.scheduler.step()
-            logger.info(
-                f"Epoch: {epoch + 1:03} Train Loss: {train_loss:.4f} Train Acc: {train_acc:.2f} Val Loss: {val_loss:.4f} Val Acc: {val_acc:.2f}"
-            )
-
-            if val_loss < best_loss:
-                if self.max_num_ckpts !=0:
-                    torch.save(
-                        {
-                            "epoch": epoch + 1,
-                            "model": self.model.state_dict(),
-                            "optimizer_state_dict": self.optimizer.state_dict(),
-                            "scheduler_state_dict": self.scheduler.state_dict(),
-                            "train_loss": train_loss,
-                            "train_acc": train_acc,
-                            "val_loss": val_loss,
-                            "val_acc": val_acc,
-                        },
-                        checkpath + "/%05d" % (epoch + 1) + "-%6.5f" % (val_loss) + ".pt",
-                    )
-                if self.max_num_ckpts > 0:
-                    ckpts = glob.glob(f'{checkpath}/*.pt')
-                    if len (ckpts) > self.max_num_ckpts:
-                        os.remove(sorted(ckpts,key=lambda x: os.stat(x).st_ctime)[0])
-
-                log_dict = {
-                    "Epoch": epoch + 1,
-                    "train_loss": train_loss,
-                    "train_acc":train_acc,
-                    "val_loss":val_loss,
-                    "val_acc":val_acc,
-                    "train_time": train_time,
-                }
-
-                jsonlog.dump(log_dict)
-                best_loss = train_loss
-                torch.save({"model": self.model.state_dict()}, outpath + "/best-model.pt")
-
-            monitor_loss = val_loss if not np.isnan(val_loss) else train_loss
+                train_loss,train_acc, train_time = train_one_step(
+                    self.model,
+                    self.optimizer,
+                    train_loss_func,
+                    train_loader,
+                    device = device,
+                    )      
             
-            if self.early_stopper is not None and self.early_stopper.early_stop(validation_loss=monitor_loss):
-                tqdm.write('Early Stopping')
-                break
-            
-            tqdm.write(f'Epoch {epoch+1}/{num_epochs}\t Train Loss: {train_loss}, Train Acc: {train_acc}, Val Loss: {val_loss}, Val Acc: {val_acc}')
-        jsonlog.close()
-        logger.info("## Training complete ##")
+                val_loss,val_acc = validate_one_step(self.model,
+                    train_loss_func,
+                    val_loader,
+                    device = device,)
+
+                self.scheduler.step()
+                logger.info(
+                    f"Epoch: {epoch + 1:03} Train Loss: {train_loss:.4f} Train Acc: {train_acc:.2f} Val Loss: {val_loss:.4f} Val Acc: {val_acc:.2f}"
+                )
+
+                if val_loss < best_loss:
+                    if self.max_num_ckpts !=0:
+                        torch.save(
+                            {
+                                "epoch": epoch + 1,
+                                "model": self.model.state_dict(),
+                                "optimizer_state_dict": self.optimizer.state_dict(),
+                                "scheduler_state_dict": self.scheduler.state_dict(),
+                                "train_loss": train_loss,
+                                "train_acc": train_acc,
+                                "val_loss": val_loss,
+                                "val_acc": val_acc,
+                            },
+                            checkpath + "/%05d" % (epoch + 1) + "-%6.5f" % (val_loss) + ".pt",
+                        )
+                    if self.max_num_ckpts > 0:
+                        ckpts = glob.glob(f'{checkpath}/*.pt')
+                        if len (ckpts) > self.max_num_ckpts:
+                            os.remove(sorted(ckpts,key=lambda x: os.stat(x).st_ctime)[0])
+
+                    log_dict = {
+                        "Epoch": epoch + 1,
+                        "train_loss": train_loss,
+                        "train_acc":train_acc,
+                        "val_loss":val_loss,
+                        "val_acc":val_acc,
+                        "train_time": train_time,
+                    }
+
+                    jsonlog.dump(log_dict)
+                    best_loss = train_loss
+                    torch.save({"model": self.model.state_dict()}, outpath + "/best-model.pt")
+
+                monitor_loss = val_loss if not np.isnan(val_loss) else train_loss
+                
+                if self.early_stopper is not None and self.early_stopper.early_stop(validation_loss=monitor_loss):
+                    tqdm.write('Early Stopping')
+                    break
+                
+                tqdm.write(f'Epoch {epoch+1}/{num_epochs}\t Train Loss: {train_loss}, Train Acc: {train_acc}, Val Loss: {val_loss}, Val Acc: {val_acc}')
+            jsonlog.close()
+            logger.info("## Training complete ##")
+        except KeyboardInterrupt:
+            logger.info("## Training interrupted ##")
+            print("Training interrupted")
 
