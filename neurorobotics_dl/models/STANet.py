@@ -86,7 +86,7 @@ class CC_Block(nn.Module):
             print(x.shape)
         return x
         # return self.conv(x)
-    
+#%%
 class AttentionHead(nn.Module):
     def __init__(self,
                  seq_len,

@@ -38,6 +38,7 @@ def train_one_step(
     criterion: nn.Module,
     dataloader: tuple,
     device: str = 'cuda',
+    contraints = None
 ):
     model.train()
 
@@ -66,7 +67,8 @@ def train_one_step(
         # Backward pass
         loss.backward()
         optimizer.step()
-
+        if contraints is not None: 
+            model.apply(contraints)
         # Update metrics
         num_samples = y.numel()
         avg_loss += loss.detach().cpu().item() * num_samples
@@ -166,7 +168,8 @@ class MyTrainer:
                  scheduler: torch.optim.lr_scheduler,
                  es_patience: int,
                  es_min_delta: float,
-                 max_num_ckpts: int = -1) -> None:
+                 max_num_ckpts: int = -1,
+                 contraints = None) -> None:
         
         """
         Parameters:
@@ -183,6 +186,8 @@ class MyTrainer:
              self.early_stopper = EarlyStopper(es_patience,es_min_delta)
 
         self.max_num_ckpts = max_num_ckpts
+
+        self.contraints = contraints
 
     def train(
         self,
@@ -218,6 +223,50 @@ class MyTrainer:
         # Start training
         best_loss = np.inf
         try:
+            # ## First validation step, preliminary
+            # val_loss,val_acc = validate_one_step(self.model,
+            #         train_loss_func,
+            #         val_loader,
+            #         device = device,)
+
+            # logger.info(
+            #     f"Epoch: 0 Val Loss: {val_loss:.4f} Val Acc: {val_acc:.2f}"
+            # )
+            # tqdm.write(f'Epoch 0/{num_epochs}\t  Val Loss: {val_loss}, Val Acc: {val_acc}')
+
+            # tqdm.write(f"New best loss achieved: {val_loss}")
+            # if self.max_num_ckpts !=0:
+            #     torch.save(
+            #         {
+            #             "epoch": 0,
+            #             "model": self.model.state_dict(),
+            #             "optimizer_state_dict": self.optimizer.state_dict(),
+            #             "scheduler_state_dict": self.scheduler.state_dict(),
+            #             "train_loss": np.nan,
+            #             "train_acc": np.nan,
+            #             "val_loss": val_loss,
+            #             "val_acc": val_acc,
+            #         },
+            #         checkpath + "/%05d" % (0) + "-%6.5f" % (val_loss) + ".pt",
+            #     )
+            # if self.max_num_ckpts > 0:
+            #     ckpts = glob.glob(f'{checkpath}/*.pt')
+            #     if len (ckpts) > self.max_num_ckpts:
+            #         os.remove(sorted(ckpts,key=lambda x: os.stat(x).st_ctime)[0])
+
+            # log_dict = {
+            #     "Epoch": 0,
+            #     "train_loss": np.nan,
+            #     "train_acc": np.nan,
+            #     "val_loss":val_loss,
+            #     "val_acc":val_acc,
+            #     "train_time": np.nan,
+            # }
+
+            # jsonlog.dump(log_dict)
+            # best_loss = val_loss
+            # torch.save({"model": self.model.state_dict()}, outpath + "/best-model.pt")
+            
             for epoch in tqdm(range(num_epochs),position=0):
 
                 train_loss,train_acc, train_time = train_one_step(
@@ -226,6 +275,7 @@ class MyTrainer:
                     train_loss_func,
                     train_loader,
                     device = device,
+                    contraints = self.contraints
                     )      
             
                 val_loss,val_acc = validate_one_step(self.model,
@@ -237,8 +287,10 @@ class MyTrainer:
                 logger.info(
                     f"Epoch: {epoch + 1:03} Train Loss: {train_loss:.4f} Train Acc: {train_acc:.2f} Val Loss: {val_loss:.4f} Val Acc: {val_acc:.2f}"
                 )
+                tqdm.write(f'Epoch {epoch+1}/{num_epochs}\t Train Loss: {train_loss}, Train Acc: {train_acc}, Val Loss: {val_loss}, Val Acc: {val_acc}')
 
                 if val_loss < best_loss:
+                    tqdm.write(f"New best loss achieved: {val_loss}")
                     if self.max_num_ckpts !=0:
                         torch.save(
                             {
@@ -268,7 +320,7 @@ class MyTrainer:
                     }
 
                     jsonlog.dump(log_dict)
-                    best_loss = train_loss
+                    best_loss = val_loss
                     torch.save({"model": self.model.state_dict()}, outpath + "/best-model.pt")
 
                 monitor_loss = val_loss if not np.isnan(val_loss) else train_loss
@@ -277,7 +329,6 @@ class MyTrainer:
                     tqdm.write('Early Stopping')
                     break
                 
-                tqdm.write(f'Epoch {epoch+1}/{num_epochs}\t Train Loss: {train_loss}, Train Acc: {train_acc}, Val Loss: {val_loss}, Val Acc: {val_acc}')
             jsonlog.close()
             logger.info("## Training complete ##")
         except KeyboardInterrupt:

@@ -1,2 +1,4 @@
-from .models import *
-from .STANet import STANet
+from .EEGNet import *
+from .STANet import *
+from .TGCN import * 
+from .EEGTransformer import *
