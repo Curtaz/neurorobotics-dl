@@ -3,14 +3,14 @@ from torch import nn
 import math
 
 class EEGTransformer(nn.Module):
-    def __init__(self,d_model = 16, embedding_dim = 8, encoder_layer_args=dict(),encoder_args=dict()):
+    def __init__(self,d_model = 16, embedding_dim = 8, encoder_layer_args={'nhead':4},encoder_args=dict()):
         super().__init__()
         self.pos_encoder = PositionalEncoding(d_model)
         encoder_layer = nn.TransformerEncoderLayer(d_model,**encoder_layer_args)
         self.encoder = torch.nn.TransformerEncoder(encoder_layer,**encoder_args) 
         self.fc = nn.Linear(d_model,embedding_dim)
     def forward(self,x):
-        h = x.squeeze(2).permute(0,2,1)
+        h = x.squeeze(1).permute(0,2,1)
         h = self.pos_encoder(h)
         h = self.encoder(h)
         h = h.mean(axis=1)

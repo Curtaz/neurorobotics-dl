@@ -55,7 +55,7 @@ def train_one_step(
         y = y.to(device)
 
         # Forward pass
-        logits = model(x).squeeze()
+        logits = model(x)
 
         # Compute loss
         loss = criterion(logits, y)
@@ -107,7 +107,7 @@ def validate_one_step(model: nn.Module,
             y = y.to(device)
 
             # Forward pass
-            logits = model(x).squeeze(1)
+            logits = model(x)
             # Compute loss
             loss = criterion(logits, y)
 
