@@ -38,7 +38,8 @@ def train_one_step(
     criterion: nn.Module,
     dataloader: tuple,
     device: str = 'cuda',
-    contraints = None
+    contraints = None,
+    show_progress: bool = True,
 ):
     model.train()
 
@@ -48,14 +49,14 @@ def train_one_step(
 
     start = default_timer()
 
-    for x,y in tqdm(dataloader,position=1, leave=False):
+    for x,y in tqdm(dataloader,position=1, leave=False,disable=not show_progress):
         optimizer.zero_grad()
 
         x = x.to(device)
         y = y.to(device)
 
         # Forward pass
-        logits = model(x)
+        logits = model(x).squeeze(-1)
 
         # Compute loss
         loss = criterion(logits, y)
@@ -90,7 +91,8 @@ def train_one_step(
 def validate_one_step(model: nn.Module,
                       criterion: nn.Module,
                       dataloader: tuple,
-                      device: str = 'cuda',):
+                      device: str = 'cuda',
+                      show_progress: bool = True):
     
     if dataloader is None:
         return np.nan, np.nan
@@ -102,12 +104,12 @@ def validate_one_step(model: nn.Module,
 
     total_num_samples = 0
     with torch.no_grad():
-        for x,y in tqdm(dataloader,position=1, leave=False):
+        for x,y in tqdm(dataloader,position=1, leave=False,disable=not show_progress):
             x = x.to(device)
             y = y.to(device)
 
             # Forward pass
-            logits = model(x)
+            logits = model(x).squeeze(-1)
             # Compute loss
             loss = criterion(logits, y)
 
@@ -198,6 +200,7 @@ class MyTrainer:
         logger_name: str = None,
         device: str = 'cpu',
         path: str = None,
+        show_progress: bool = True,
     ) -> None:
 
         if path is None: path = os.getcwd()
@@ -267,7 +270,7 @@ class MyTrainer:
             # best_loss = val_loss
             # torch.save({"model": self.model.state_dict()}, outpath + "/best-model.pt")
             
-            for epoch in tqdm(range(num_epochs),position=0):
+            for epoch in tqdm(range(num_epochs),position=0,disable=not show_progress):
 
                 train_loss,train_acc, train_time = train_one_step(
                     self.model,
@@ -275,13 +278,16 @@ class MyTrainer:
                     train_loss_func,
                     train_loader,
                     device = device,
-                    contraints = self.contraints
+                    contraints = self.contraints,
+                    show_progress = show_progress
                     )      
             
                 val_loss,val_acc = validate_one_step(self.model,
                     train_loss_func,
                     val_loader,
-                    device = device,)
+                    device = device,
+                    show_progress = show_progress
+                    )
 
                 self.scheduler.step()
                 logger.info(

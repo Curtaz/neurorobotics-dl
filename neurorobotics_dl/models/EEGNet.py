@@ -12,6 +12,7 @@ class EEGNet(nn.Module):
                      F1 = 8, 
                      D = 2, 
                      F2 = 16, 
+                     activation = nn.ELU()
                       ) -> None:
                 super().__init__()
 
@@ -25,18 +26,21 @@ class EEGNet(nn.Module):
                 self.bn3 = nn.BatchNorm2d(F2)
                 self.drop2 = nn.Dropout2d(p=dropoutRate)
                 self.fc = nn.Linear(F2*(Samples//32),nb_classes)
-
+                
+                self.activation = activation
+                
         def forward(self,x):
                 h = self.conv(x)
                 h = self.bn1(h)
                 h = self.depth_conv(h)
                 h = self.bn2(h)
-                h = F.elu(h)
+                h = self.activation(h)
                 h = F.avg_pool2d(h,(1, 4))
                 h = self.drop1(h)
                 h = self.point_conv(h)
                 h = self.bn3(h)
-                h = F.elu(h)
+                h = self.activation(h)
+
                 h = F.avg_pool2d(h,(1, 8))
                 h = self.drop2(h)
                 h = torch.flatten(h,start_dim=1)

@@ -70,6 +70,61 @@ class GraphConvWithLearnableWeight(nn.Module):
             
             return W 
 
+# class GraphConvWithLearnableWeight(nn.Module):
+#     def __init__(self, num_channels, in_features, out_features):
+#         super(GraphConvWithLearnableWeight, self).__init__()
+#         self.in_features = in_features
+#         self.out_features = out_features
+        
+#         ## Not learnable support buffers
+#         Aui = torch.triu(torch.ones(num_channels,num_channels),1) # Upper triangular
+#         self.register_buffer('Aui',Aui)
+#         Al = torch.tril(torch.ones(num_channels,num_channels),-1) # Lower triangular
+#         self.register_buffer('Al',Al)
+#         EyeA = torch.eye(num_channels) # Fixed diagonal
+#         self.register_buffer('EyeA',EyeA)
+
+#         ## Learnable adjacency weights
+#         self.Wa = nn.Parameter(self.weight_init(num_channels),requires_grad=True)
+
+#         ## Graph Convolution
+#         self.weight = nn.Parameter(torch.FloatTensor(in_features, out_features))
+#         self.bias = nn.Parameter(torch.FloatTensor(out_features))
+#         self.reset_parameters()
+
+#     def reset_parameters(self):
+#         nn.init.xavier_uniform_(self.weight)
+#         nn.init.zeros_(self.bias)
+
+#     def weight_init(self,num_channels):
+#         return torch.ones(num_channels,num_channels) + torch.randn(num_channels,num_channels)
+        
+#     def forward(self, x):
+#         W = self.Wa +self.Wa.T
+        
+#         with torch.no_grad():
+#             adj = W
+#             adj[adj!=0] = 1
+#         # Compute degree matrix
+#         degree_matrix = torch.sum(adj, dim=1).abs()
+#         # degree_matrix = torch.sum(adj, dim=1)
+#         degree_matrix = torch.diag(degree_matrix.pow(-0.5))
+
+#         # Normalize adjacency matrix
+#         adj= torch.matmul(torch.matmul(degree_matrix, adj), degree_matrix)
+            
+#         # Perform graph convolution
+#         support = torch.matmul(x, self.weight) + self.bias
+#         output = adj @ W @ support
+
+#         return torch.relu(output)
+    
+#     def get_adjacency(self):
+#         with torch.no_grad():
+#             W = self.Wa
+
+#             return W 
+        
 class GCN_GRU_sequence_fxdD(nn.Module):
     def __init__(self,
                  num_channels,
@@ -87,7 +142,6 @@ class GCN_GRU_sequence_fxdD(nn.Module):
         """
         self.num_channels = num_channels
 
-        
         self.conv = nn.Conv2d(1,gcn_input_dim,kernel_size=(1, 512),padding=(0, 512 // 2), bias = False)
         self.bn1 = nn.BatchNorm2d(gcn_input_dim)
         
@@ -113,7 +167,6 @@ class GCN_GRU_sequence_fxdD(nn.Module):
             x = x.view((1,*shape))
         b_s,n_ch,s_s,s_l = shape 
 
-        # h = self.conv(x.permute(0,3,2,1))
         h = self.conv(x)
         h = self.bn1(h)
         h = h.permute(0,3,2,1)
