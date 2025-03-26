@@ -1,11 +1,17 @@
 import torch
 from torch import nn
 import math
-
+    
 class EEGTransformer(nn.Module):
-    def __init__(self,d_model = 16, embedding_dim = 8, encoder_layer_args={'nhead':4},encoder_args=dict()):
+    def __init__(self,
+                 d_model = 16, 
+                 embedding_dim = 8, 
+                 seq_len = 512,
+                 encoder_layer_args={'nhead':4},
+                 encoder_args=dict()):
         super().__init__()
-        self.pos_encoder = PositionalEncoding(d_model)
+        print('porcodio')
+        self.pos_encoder = PositionalEncoding(d_model,max_len=seq_len)
         encoder_layer = nn.TransformerEncoderLayer(d_model,**encoder_layer_args)
         self.encoder = torch.nn.TransformerEncoder(encoder_layer,**encoder_args) 
         self.fc = nn.Linear(d_model,embedding_dim)

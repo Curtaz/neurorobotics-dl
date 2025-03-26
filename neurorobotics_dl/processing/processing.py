@@ -8,7 +8,7 @@ from scipy.signal import butter,lfilter
 from pandas import DataFrame
 
 OFFSET = 0x8000
-
+    
 def read_gdf(spath,verbosity='error',raw_events=False):
     raw = read_raw_gdf(spath,verbose=verbosity)
 
@@ -25,7 +25,7 @@ def read_gdf(spath,verbosity='error',raw_events=False):
 
     header = {'SampleRate':raw.info['sfreq'],
               'EVENT': events,
-              'ChannelNames':raw.info['ch_names'],
+              'ChannelNames':np.array(raw.info['ch_names']),
             }
     
     return eeg,header
@@ -50,8 +50,8 @@ def filter_data(eeg,fs,reference=None,filt_order=2,fc_hp=None,fc_lp=None,fc_bp=N
         eeg = lfilter(b, a, eeg,axis=0)
 
     if fc_hp is not None: # Apply highpass filter
-        d, c = butter(filt_order, 2 * fc_hp / fs, "high")
-        eeg = lfilter(d, c, eeg,axis=0)
+        b, a = butter(filt_order, 2 * fc_hp / fs, "high")
+        eeg = lfilter(b, a, eeg,axis=0)
 
     if fc_lp is not None: # Apply lowpass filter
         b, a = butter(filt_order, 2 * fc_lp / fs, "low")
@@ -73,11 +73,6 @@ def get_events(events, OFFSET=0x8000):
 
     true_events['END'] = true_events['END'].astype(int)
     true_events['DUR'] = true_events['END']-true_events['POS'] #Compute event duration
-
-    # Replace continuous feedback events with trial types, then keep them only
-    # trial_types = true_events['TYP'][(true_events['TYP'].isin([769,770,771,773,900,901,783]))].values
-    # true_events = true_events[true_events['TYP']==Event.CONT_FEEDBACK]
-    # true_events['TYP'] = trial_types
 
     # Keep only relevant columns
     true_events = true_events[['TYP','POS','DUR',]]
