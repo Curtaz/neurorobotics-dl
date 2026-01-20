@@ -56,7 +56,8 @@ class PrototypicalModel(nn.Module):
             # Ensure that all contiguous indices are in the means dict
             supports = torch.stack(means_dict[i], dim=0)
             if supports.size(0) > 1:
-                mean = supports.mean(0).squeeze(0)
+                mean = self.mean(supports).squeeze(0) if self.mean is not None else supports.mean(0).squeeze(0)
+                # mean = supports.mean(0).squeeze(0)
             else:
                 mean = supports.squeeze(0)
             means.append(mean)
@@ -135,6 +136,7 @@ def train_step(model,train_sampler,optimizer,loss_fn, writer, scheduler = None, 
     model.train()
     with torch.enable_grad():
         for idx,batch in enumerate(tqdm(train_sampler,position=1,leave=False)):
+            # print(idx)
             # Zero the gradients and clear the accumulated loss
             optimizer.zero_grad()
 
@@ -254,41 +256,45 @@ def train(model,
 
     # Training start
     print('Beginning training')
-    for epoch in tqdm(range(num_epochs),position=0):
-        train_loss = train_step(model,episodic_sampler,optimizer,loss_fn,writer,scheduler,log_interval,max_grad_norm,device)
-        val_loss,val_metric = test_step(model,train_sampler,val_sampler,loss_fn,device)
-        if scheduler: 
-            lr = scheduler.get_last_lr()
-            scheduler.step()
-        else:
-            lr = optimizer.param_groups[0]['lr']
-        
-        # Update best model
-        if best_metric is None or val_metric > best_metric:
-            best_metric = val_metric
-            best_model_state = model.state_dict()
-            for k, t in best_model_state.items():
-                best_model_state[k] = t.cpu().detach()
-            best_model = best_model_state
-            torch.save({'model':best_model,
-                        'epoch':epoch,
-                        'optimizer':optimizer.state_dict()}, os.path.join(checkdir, f'epoch{epoch+1}_{best_metric:0.4f}.pt'))
+    try:
+        for epoch in tqdm(range(num_epochs),position=0):
+            train_loss = train_step(model,episodic_sampler,optimizer,loss_fn,writer,scheduler,log_interval,max_grad_norm,device)
+            val_loss,val_metric = test_step(model,train_sampler,val_sampler,loss_fn,device)
+            if scheduler: 
+                lr = scheduler.get_last_lr()
+                scheduler.step()
+            else:
+                lr = optimizer.param_groups[0]['lr']
+            
+            # Update best model
+            if best_metric is None or val_metric > best_metric:
+                best_metric = val_metric
+                best_model_state = model.state_dict()
+                for k, t in best_model_state.items():
+                    best_model_state[k] = t.cpu().detach()
+                best_model = best_model_state
+                torch.save({'model':best_model,
+                            'epoch':epoch,
+                            'optimizer':optimizer.state_dict()}, os.path.join(checkdir, f'epoch{epoch+1}_{best_metric:0.4f}.pt'))
 
-        # Log metrics
-        tqdm.write(f'Epoch {epoch+1}/{num_epochs}: Train loss: {train_loss} - Val loss: {val_loss} - Val acc: {val_metric}')
-        writer.add_scalar('Hyperparameters/Learning_Rate', lr, epoch)
-        writer.add_scalar('Training/Loss', train_loss, epoch)
-        writer.add_scalar('Validation/Loss', val_loss, epoch)
-        writer.add_scalar('Validation/Accuracy', val_metric, epoch)
+            # Log metrics
+            tqdm.write(f'Epoch {epoch+1}/{num_epochs}: Train loss: {train_loss} - Val loss: {val_loss} - Val acc: {val_metric}')
+            writer.add_scalar('Hyperparameters/Learning_Rate', lr, epoch)
+            writer.add_scalar('Training/Loss', train_loss, epoch)
+            writer.add_scalar('Validation/Loss', val_loss, epoch)
+            writer.add_scalar('Validation/Accuracy', val_metric, epoch)
 
-        if use_wandb: wandb.log({"train_loss": train_loss, "val_loss": val_loss, "val_accuracy": val_metric, "lr": lr})
-        if early_stopper.early_stop(validation_loss=val_loss): 
-            tqdm.write('Early stopping')
-            break
-    # Save the best model
-    print("Finished training.")
+            if use_wandb: wandb.log({"train_loss": train_loss, "val_loss": val_loss, "val_accuracy": val_metric, "lr": lr})
+            if early_stopper.early_stop(validation_loss=val_loss): 
+                tqdm.write('Early stopping')
+                break
+    except KeyboardInterrupt:
+        print("Training interrupted. Exiting...")
+    finally:
+        # Save the best model
+        print("Finished training.")
 
-    torch.save(best_model, os.path.join(output_dir, 'model.pt'))
+        torch.save(best_model, os.path.join(output_dir, 'model.pth'))
 
-    if use_wandb:
-          wandb.finish()
+        if use_wandb:
+            wandb.finish()

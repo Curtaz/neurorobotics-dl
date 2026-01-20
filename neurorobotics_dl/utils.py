@@ -3,8 +3,9 @@ from importlib import import_module
 import numpy as np
 import yaml
 from prettytable import PrettyTable
-from torch.utils.data import Dataset
 from torch import load
+from torch.utils.data import Dataset
+
 
 def fix_mat(data):
     if data.dtype.names:
@@ -93,6 +94,34 @@ def load_checkpoint(model_ckpt,*extras):
         return model,extras
     return model
 
+def make_montage(subset_channels=None):
+
+    """ Create a dig montage with a (optional) subset of 10-20 standard EEG channels.
+    Args:
+        subset_channels (list,optional): List of channel names to include in the montage.
+    Returns:
+        montage (mne.channels.DigMontage): Montage object with the specified channels.
+    """
+
+    from mne.channels import make_dig_montage, make_standard_montage
+
+    # Load the full 10-20 montage
+    full_montage = make_standard_montage('standard_1020')
+
+    if subset_channels is None:
+        return full_montage
+
+    # Extract only the positions of the subset channels
+    all_positions = full_montage.get_positions()['ch_pos']
+    subset_positions = {ch.upper(): pos for ch, pos in all_positions.items() if ch.upper() in subset_channels}
+
+    # Order the subset positions based on the order in subset_channels
+    subset_positions = {ch: subset_positions[ch] for ch in subset_channels}
+
+    # Create a new montage using only those positions
+    return make_dig_montage(ch_pos=subset_positions, coord_frame='head')
+    
+    
 """__________________________________________________UTILITIES________________________________________________"""
 
 class MyDataset(Dataset):
