@@ -8,6 +8,7 @@ from torch.utils.data import Dataset
 
 
 def fix_mat(data):
+    """ Recursively fix MATLAB structs loaded with scipy.io.loadmat by removing unnecessary nesting and squeezing arrays."""
     if data.dtype.names:
         new_data = dict()
         for name in data.dtype.names:
@@ -22,6 +23,8 @@ def fix_mat(data):
         return data
 
 def summary(model):
+    """ Print a summary of the model's parameters in a tabular format."""
+    
     print('Model Parameters:')
     model_table = PrettyTable()
     model_table.field_names = ["Layer", "Params", "Shape", "Trainable"]
@@ -181,3 +184,23 @@ class EarlyStopper:
                 if self.counter >= self.patience:
                     return True
         return False
+    
+
+def fidx(channels, chlbl):
+    """ Find the indices of specified channels in a list of channel labels.
+    Args:
+        channels (list): List of channel names to find.
+        chlbl (list): List of available channel labels.
+    Returns:
+        idx (np.array): Array of indices corresponding to the specified channels.
+    """
+
+    chlbl = np.array(chlbl)
+    idx = np.zeros(len(channels),dtype = int)
+    for i,ch in enumerate(channels):
+        if ch in chlbl:
+            idx[i] = np.where(chlbl == ch)[0].item()
+        else:
+            idx[i] = -1
+            raise Exception(f"Channel {ch} not found in channels")
+    return idx

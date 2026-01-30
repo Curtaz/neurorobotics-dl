@@ -12,6 +12,11 @@ OFFSET = 0x8000
 def read_gdf(spath,verbosity='error',raw_events=False,drop_chans=[]):
     raw = read_raw_gdf(spath,verbose=verbosity)
     raw.drop_channels(drop_chans,on_missing='ignore')
+    try:
+        subj = spath.split('/')[-1].split('.')[0]
+        raw.info['subject_info']['his_id'] = subj
+    except:
+        raw.info['subject_info']['his_id'] = 'unknown'
     eeg = raw.get_data().T
     events,names = events_from_annotations(raw,verbose=verbosity)
     names = {v:int(k) for k,v in names.items()}
@@ -22,13 +27,11 @@ def read_gdf(spath,verbosity='error',raw_events=False,drop_chans=[]):
     if not raw_events:
         events = get_events(events)
 
-    header = {'SampleRate':raw.info['sfreq'],
-              'EVENT': events,
-              'ChannelNames':np.array(raw.info['ch_names']),
+    return {'data': eeg,
+            'events': events,
+            'info': raw.info
             }
     
-    return eeg,header
-
 
 def read_mat(spath):
     data = loadmat(spath)
